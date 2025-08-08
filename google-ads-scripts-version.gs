@@ -11,7 +11,7 @@
  */
 
 // Configuration - Update these values
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1Fm27WvBokQqP_qguexymNhCQnzGN4cXL_f6pnv82oPU/edit?usp=sharing';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/19rQ9zO5id6W6hAVW5hnm_8qNSEiLcWmqQQLq3w_hDSA/edit?gid=0#gid=0';
 const DATE_RANGE_DAYS = 30; // Number of days to pull data for
 
 /**
@@ -58,7 +58,6 @@ function main() {
 function getCampaignData(startDate, endDate) {
   try {
     const campaignIterator = AdsApp.campaigns()
-      .withCondition(`segments.date BETWEEN '${formatDate(startDate)}' AND '${formatDate(endDate)}'`)
       .withCondition("campaign.status != 'REMOVED'")
       .get();
     
@@ -66,26 +65,35 @@ function getCampaignData(startDate, endDate) {
     
     while (campaignIterator.hasNext()) {
       const campaign = campaignIterator.next();
-      const stats = campaign.getStatsFor(startDate, endDate);
       
-      const row = {
-        date: formatDate(new Date()),
-        campaignId: campaign.getId(),
-        campaignName: campaign.getName(),
-        status: campaign.getStatus(),
-        channelType: campaign.getAdvertisingChannelType(),
-        impressions: stats.getImpressions(),
-        clicks: stats.getClicks(),
-        cost: stats.getCost(),
-        conversions: stats.getConversions(),
-        conversionValue: stats.getConversionValue(),
-        averageCpc: stats.getAverageCpc(),
-        ctr: stats.getCtr(),
-        averageCpm: stats.getAverageCpm(),
-        conversionRate: stats.getConversionRate()
-      };
-      
-      campaignData.push(row);
+      try {
+        const stats = campaign.getStatsFor(startDate, endDate);
+        
+        // Get campaign details
+        const row = {
+          date: formatDate(new Date()),
+          campaignId: campaign.getId(),
+          campaignName: campaign.getName(),
+          status: campaign.getStatus(),
+          channelType: campaign.getAdvertisingChannelType(),
+          impressions: stats.getImpressions() || 0,
+          clicks: stats.getClicks() || 0,
+          cost: stats.getCost() || 0,
+          conversions: stats.getConversions() || 0,
+          conversionValue: stats.getConversionValue() || 0,
+          averageCpc: stats.getAverageCpc() || 0,
+          ctr: stats.getCtr() || 0,
+          averageCpm: stats.getAverageCpm() || 0,
+          conversionRate: stats.getConversionRate() || 0
+        };
+        
+        // Only include campaigns with some activity
+        if (row.impressions > 0 || row.clicks > 0 || row.cost > 0) {
+          campaignData.push(row);
+        }
+      } catch (campaignError) {
+        console.error(`Error processing campaign ${campaign.getName()}:`, campaignError);
+      }
     }
     
     console.log(`Processed ${campaignData.length} campaign records`);
@@ -103,7 +111,6 @@ function getCampaignData(startDate, endDate) {
 function getAdGroupData(startDate, endDate) {
   try {
     const adGroupIterator = AdsApp.adGroups()
-      .withCondition(`segments.date BETWEEN '${formatDate(startDate)}' AND '${formatDate(endDate)}'`)
       .withCondition("ad_group.status != 'REMOVED'")
       .get();
     
@@ -111,27 +118,35 @@ function getAdGroupData(startDate, endDate) {
     
     while (adGroupIterator.hasNext()) {
       const adGroup = adGroupIterator.next();
-      const campaign = adGroup.getCampaign();
-      const stats = adGroup.getStatsFor(startDate, endDate);
       
-      const row = {
-        date: formatDate(new Date()),
-        campaignId: campaign.getId(),
-        campaignName: campaign.getName(),
-        adGroupId: adGroup.getId(),
-        adGroupName: adGroup.getName(),
-        status: adGroup.getStatus(),
-        impressions: stats.getImpressions(),
-        clicks: stats.getClicks(),
-        cost: stats.getCost(),
-        conversions: stats.getConversions(),
-        averageCpc: stats.getAverageCpc(),
-        ctr: stats.getCtr(),
-        averageCpm: stats.getAverageCpm(),
-        conversionRate: stats.getConversionRate()
-      };
-      
-      adGroupData.push(row);
+      try {
+        const campaign = adGroup.getCampaign();
+        const stats = adGroup.getStatsFor(startDate, endDate);
+        
+        const row = {
+          date: formatDate(new Date()),
+          campaignId: campaign.getId(),
+          campaignName: campaign.getName(),
+          adGroupId: adGroup.getId(),
+          adGroupName: adGroup.getName(),
+          status: adGroup.getStatus(),
+          impressions: stats.getImpressions() || 0,
+          clicks: stats.getClicks() || 0,
+          cost: stats.getCost() || 0,
+          conversions: stats.getConversions() || 0,
+          averageCpc: stats.getAverageCpc() || 0,
+          ctr: stats.getCtr() || 0,
+          averageCpm: stats.getAverageCpm() || 0,
+          conversionRate: stats.getConversionRate() || 0
+        };
+        
+        // Only include ad groups with some activity
+        if (row.impressions > 0 || row.clicks > 0 || row.cost > 0) {
+          adGroupData.push(row);
+        }
+      } catch (adGroupError) {
+        console.error(`Error processing ad group ${adGroup.getName()}:`, adGroupError);
+      }
     }
     
     console.log(`Processed ${adGroupData.length} ad group records`);
@@ -149,7 +164,6 @@ function getAdGroupData(startDate, endDate) {
 function getKeywordData(startDate, endDate) {
   try {
     const keywordIterator = AdsApp.keywords()
-      .withCondition(`segments.date BETWEEN '${formatDate(startDate)}' AND '${formatDate(endDate)}'`)
       .withCondition("ad_group_criterion.status != 'REMOVED'")
       .get();
     
@@ -157,29 +171,37 @@ function getKeywordData(startDate, endDate) {
     
     while (keywordIterator.hasNext()) {
       const keyword = keywordIterator.next();
-      const adGroup = keyword.getAdGroup();
-      const campaign = adGroup.getCampaign();
-      const stats = keyword.getStatsFor(startDate, endDate);
       
-      const row = {
-        date: formatDate(new Date()),
-        campaignId: campaign.getId(),
-        campaignName: campaign.getName(),
-        adGroupId: adGroup.getId(),
-        adGroupName: adGroup.getName(),
-        keyword: keyword.getText(),
-        status: keyword.getStatus(),
-        impressions: stats.getImpressions(),
-        clicks: stats.getClicks(),
-        cost: stats.getCost(),
-        conversions: stats.getConversions(),
-        averageCpc: stats.getAverageCpc(),
-        ctr: stats.getCtr(),
-        averageCpm: stats.getAverageCpm(),
-        conversionRate: stats.getConversionRate()
-      };
-      
-      keywordData.push(row);
+      try {
+        const adGroup = keyword.getAdGroup();
+        const campaign = adGroup.getCampaign();
+        const stats = keyword.getStatsFor(startDate, endDate);
+        
+        const row = {
+          date: formatDate(new Date()),
+          campaignId: campaign.getId(),
+          campaignName: campaign.getName(),
+          adGroupId: adGroup.getId(),
+          adGroupName: adGroup.getName(),
+          keyword: keyword.getText(),
+          status: keyword.getStatus(),
+          impressions: stats.getImpressions() || 0,
+          clicks: stats.getClicks() || 0,
+          cost: stats.getCost() || 0,
+          conversions: stats.getConversions() || 0,
+          averageCpc: stats.getAverageCpc() || 0,
+          ctr: stats.getCtr() || 0,
+          averageCpm: stats.getAverageCpm() || 0,
+          conversionRate: stats.getConversionRate() || 0
+        };
+        
+        // Only include keywords with some activity
+        if (row.impressions > 0 || row.clicks > 0 || row.cost > 0) {
+          keywordData.push(row);
+        }
+      } catch (keywordError) {
+        console.error(`Error processing keyword ${keyword.getText()}:`, keywordError);
+      }
     }
     
     console.log(`Processed ${keywordData.length} keyword records`);
@@ -242,11 +264,6 @@ function getOrCreateSheet(spreadsheet, sheetName) {
  */
 function writeDataToSheet(sheet, data, headers) {
   try {
-    if (data.length === 0) {
-      console.log(`No data to write to ${sheet.getName()}`);
-      return;
-    }
-    
     // Clear existing data
     sheet.clear();
     
@@ -254,11 +271,17 @@ function writeDataToSheet(sheet, data, headers) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
     
+    if (data.length === 0) {
+      console.log(`No data to write to ${sheet.getName()}`);
+      return;
+    }
+    
     // Prepare data rows
     const dataRows = data.map(row => {
       return headers.map(header => {
         const headerKey = header.toLowerCase().replace(/\s+/g, '');
-        return row[headerKey] || row[Object.keys(row).find(key => key.toLowerCase().includes(headerKey.toLowerCase()))] || '';
+        const value = row[headerKey] || row[Object.keys(row).find(key => key.toLowerCase().includes(headerKey.toLowerCase()))] || '';
+        return value;
       });
     });
     
@@ -320,11 +343,11 @@ function calculateSummaryMetrics(campaignData, adGroupData, keywordData) {
     totalCampaigns: new Set(campaignData.map(d => d.campaignId)).size,
     totalAdGroups: new Set(adGroupData.map(d => d.adGroupId)).size,
     totalKeywords: new Set(keywordData.map(d => d.keyword)).size,
-    totalImpressions: campaignData.reduce((sum, d) => sum + d.impressions, 0),
-    totalClicks: campaignData.reduce((sum, d) => sum + d.clicks, 0),
-    totalCost: campaignData.reduce((sum, d) => sum + d.cost, 0),
-    totalConversions: campaignData.reduce((sum, d) => sum + d.conversions, 0),
-    totalConversionValue: campaignData.reduce((sum, d) => sum + d.conversionValue, 0)
+    totalImpressions: campaignData.reduce((sum, d) => sum + (d.impressions || 0), 0),
+    totalClicks: campaignData.reduce((sum, d) => sum + (d.clicks || 0), 0),
+    totalCost: campaignData.reduce((sum, d) => sum + (d.cost || 0), 0),
+    totalConversions: campaignData.reduce((sum, d) => sum + (d.conversions || 0), 0),
+    totalConversionValue: campaignData.reduce((sum, d) => sum + (d.conversionValue || 0), 0)
   };
   
   summary.averageCtr = summary.totalImpressions > 0 ? (summary.totalClicks / summary.totalImpressions) * 100 : 0;
