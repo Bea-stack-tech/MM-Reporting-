@@ -13,7 +13,7 @@
 
 // Configuration - Update these values
 const CONFIG = {
-  SHEET_URL: 'YOUR_GOOGLE_SHEETS_URL_HERE',
+  SHEET_URL: 'https://docs.google.com/spreadsheets/d/1Fm27WvBokQqP_qguexymNhCQnzGN4cXL_f6pnv82oPU/edit?usp=sharing',
   CUSTOMER_ID: 'YOUR_GOOGLE_ADS_CUSTOMER_ID',
   DATE_RANGE_DAYS: 30,
   DEVELOPER_TOKEN: 'YOUR_DEVELOPER_TOKEN',
@@ -36,6 +36,9 @@ function pullGoogleAdsData() {
   try {
     console.log('Starting Google Ads data pull...');
     
+    // Validate configuration
+    validateConfiguration();
+    
     // Get the spreadsheet
     const spreadsheet = SpreadsheetApp.openByUrl(CONFIG.SHEET_URL);
     
@@ -43,6 +46,8 @@ function pullGoogleAdsData() {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - CONFIG.DATE_RANGE_DAYS);
+    
+    console.log(`Pulling data from ${startDate.toDateString()} to ${endDate.toDateString()}`);
     
     // Pull different types of data
     const campaignData = getCampaignData(startDate, endDate);
@@ -64,6 +69,25 @@ function pullGoogleAdsData() {
     sendErrorNotification(error);
     throw error;
   }
+}
+
+/**
+ * Validate configuration before running
+ */
+function validateConfiguration() {
+  if (!CONFIG.SHEET_URL || CONFIG.SHEET_URL === 'YOUR_GOOGLE_SHEETS_URL_HERE') {
+    throw new Error('Please update SHEET_URL in the configuration');
+  }
+  
+  if (!CONFIG.CUSTOMER_ID || CONFIG.CUSTOMER_ID === 'YOUR_GOOGLE_ADS_CUSTOMER_ID') {
+    throw new Error('Please update CUSTOMER_ID in the configuration');
+  }
+  
+  if (!CONFIG.DEVELOPER_TOKEN || CONFIG.DEVELOPER_TOKEN === 'YOUR_DEVELOPER_TOKEN') {
+    throw new Error('Please update DEVELOPER_TOKEN in the configuration');
+  }
+  
+  console.log('Configuration validated successfully');
 }
 
 /**
@@ -213,7 +237,14 @@ function makeGoogleAdsApiRequest(query) {
       throw new Error(`API request failed with status ${responseCode}: ${response.getContentText()}`);
     }
     
-    return JSON.parse(response.getContentText());
+    const responseData = JSON.parse(response.getContentText());
+    
+    if (!responseData.results) {
+      console.log('No results returned from API');
+      return { results: [] };
+    }
+    
+    return responseData;
     
   } catch (error) {
     console.error('Error making Google Ads API request:', error);
@@ -227,7 +258,7 @@ function makeGoogleAdsApiRequest(query) {
 function processCampaignResponse(response) {
   const processedData = [];
   
-  if (response.results) {
+  if (response.results && response.results.length > 0) {
     response.results.forEach(result => {
       const row = {
         date: result.segments?.date || '',
@@ -249,6 +280,7 @@ function processCampaignResponse(response) {
     });
   }
   
+  console.log(`Processed ${processedData.length} campaign records`);
   return processedData;
 }
 
@@ -258,7 +290,7 @@ function processCampaignResponse(response) {
 function processAdGroupResponse(response) {
   const processedData = [];
   
-  if (response.results) {
+  if (response.results && response.results.length > 0) {
     response.results.forEach(result => {
       const row = {
         date: result.segments?.date || '',
@@ -280,6 +312,7 @@ function processAdGroupResponse(response) {
     });
   }
   
+  console.log(`Processed ${processedData.length} ad group records`);
   return processedData;
 }
 
@@ -289,7 +322,7 @@ function processAdGroupResponse(response) {
 function processKeywordResponse(response) {
   const processedData = [];
   
-  if (response.results) {
+  if (response.results && response.results.length > 0) {
     response.results.forEach(result => {
       const row = {
         date: result.segments?.date || '',
@@ -312,6 +345,7 @@ function processKeywordResponse(response) {
     });
   }
   
+  console.log(`Processed ${processedData.length} keyword records`);
   return processedData;
 }
 
@@ -356,6 +390,7 @@ function getOrCreateSheet(spreadsheet, sheetName) {
   let sheet = spreadsheet.getSheetByName(sheetName);
   if (!sheet) {
     sheet = spreadsheet.insertSheet(sheetName);
+    console.log(`Created new sheet: ${sheetName}`);
   }
   return sheet;
 }
@@ -431,6 +466,8 @@ function createSummary(spreadsheet, campaignData, adGroupData, keywordData) {
   sheet.getRange(1, 1, summaryData.length, 2).setValues(summaryData);
   sheet.getRange(1, 1, 1, 2).setFontWeight('bold');
   sheet.autoResizeColumns(1, 2);
+  
+  console.log('Summary sheet created successfully');
 }
 
 /**

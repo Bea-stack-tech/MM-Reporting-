@@ -13,7 +13,7 @@
 // =============================================================================
 
 // Your Google Sheets URL (replace with your actual sheet URL)
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1Fm27WvBokQqP_qguexymNhCQnzGN4cXL_f6pnv82oPU/edit?usp=sharing';
 
 // Your Google Ads Customer ID (10-digit number, no dashes)
 const CUSTOMER_ID = '1234567890';
@@ -72,6 +72,29 @@ const CONFIG = {
   SEND_ERROR_NOTIFICATIONS: SEND_ERROR_NOTIFICATIONS,
   ERROR_NOTIFICATION_EMAIL: ERROR_NOTIFICATION_EMAIL
 };
+
+// Validation function
+function validateConfig() {
+  const errors = [];
+  
+  if (!CONFIG.SHEET_URL || CONFIG.SHEET_URL.includes('YOUR_SHEET_ID_HERE')) {
+    errors.push('SHEET_URL must be updated with your actual Google Sheets URL');
+  }
+  
+  if (!CONFIG.CUSTOMER_ID || CONFIG.CUSTOMER_ID === '1234567890') {
+    errors.push('CUSTOMER_ID must be updated with your actual Google Ads Customer ID');
+  }
+  
+  if (!CONFIG.DEVELOPER_TOKEN || CONFIG.DEVELOPER_TOKEN === 'YOUR_DEVELOPER_TOKEN_HERE') {
+    errors.push('DEVELOPER_TOKEN must be updated with your actual Google Ads Developer Token');
+  }
+  
+  if (errors.length > 0) {
+    throw new Error('Configuration errors found:\n' + errors.join('\n'));
+  }
+  
+  return true;
+}
 
 // Make CONFIG available to other scripts
 if (typeof module !== 'undefined' && module.exports) {

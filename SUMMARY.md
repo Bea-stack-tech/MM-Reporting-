@@ -5,7 +5,7 @@ This project provides a comprehensive solution for automatically pulling Google 
 ## 📁 Project Structure
 
 ```
-google-ads-integration/
+MM-Reporting-/
 ├── google-ads-to-sheets.gs          # Main script (basic version)
 ├── enhanced-google-ads-script.gs    # Enhanced script with advanced features
 ├── config.js                        # Configuration file
@@ -18,10 +18,11 @@ google-ads-integration/
 ## 🚀 Key Features
 
 ### Basic Script (`google-ads-to-sheets.gs`)
-- **Simple Setup**: Easy configuration with just 3 variables
+- **Simple Setup**: Easy configuration with just 4 variables (SHEET_URL, CUSTOMER_ID, DATE_RANGE_DAYS, DEVELOPER_TOKEN)
 - **Core Metrics**: Pulls impressions, clicks, cost, conversions, CTR, CPC, CPM
 - **Daily Automation**: Can be set to run automatically every day
-- **Error Handling**: Basic error handling and logging
+- **Error Handling**: Enhanced error handling and logging
+- **Configuration Validation**: Validates all required settings before running
 
 ### Enhanced Script (`enhanced-google-ads-script.gs`)
 - **Multiple Data Levels**: Campaign, ad group, and keyword-level data
@@ -30,6 +31,7 @@ google-ads-integration/
 - **Advanced Filtering**: Filter by status, date ranges, performance metrics
 - **Better Error Handling**: Comprehensive error handling and notifications
 - **Data Validation**: Validates data before writing to sheets
+- **Configuration Validation**: Validates all required settings before running
 
 ## 📊 Metrics Included
 
@@ -58,7 +60,11 @@ The scripts pull the following Google Ads metrics:
 ### Option 1: Quick Setup (Recommended for Beginners)
 1. Use `google-ads-to-sheets.gs` (basic version)
 2. Follow `QUICK_SETUP.md` guide
-3. Update 3 configuration variables
+3. Update 4 configuration variables:
+   - `SHEET_URL`: Your Google Sheets URL
+   - `CUSTOMER_ID`: Your Google Ads Customer ID
+   - `DATE_RANGE_DAYS`: Number of days to pull (default: 30)
+   - `DEVELOPER_TOKEN`: Your Google Ads Developer Token
 4. Test and run
 
 ### Option 2: Advanced Setup (Recommended for Power Users)
@@ -149,6 +155,13 @@ The scripts pull the following Google Ads metrics:
 
 ## 🔄 Updates and Maintenance
 
+### Recent Improvements (Latest Version)
+- **Enhanced Error Handling**: Better error messages and logging
+- **Configuration Validation**: Automatic validation of required settings
+- **Improved API Requests**: Better handling of API responses
+- **Better Logging**: More detailed console logging for debugging
+- **Data Validation**: Validation of data before writing to sheets
+
 ### Regular Maintenance
 - Monitor API quotas and limits
 - Update Google Ads API version as needed
@@ -177,6 +190,18 @@ This project is provided as-is for educational and business use. Please ensure c
 4. **Customize as needed** for your specific requirements
 5. **Set up automation** for regular data updates
 6. **Monitor and maintain** the integration
+
+## ✅ Verification Checklist
+
+Before running the scripts, ensure you have:
+
+- [ ] Updated `SHEET_URL` with your actual Google Sheets URL
+- [ ] Updated `CUSTOMER_ID` with your Google Ads Customer ID
+- [ ] Updated `DEVELOPER_TOKEN` with your Google Ads Developer Token
+- [ ] Set up OAuth2 authentication in Google Apps Script
+- [ ] Shared your Google Sheets with the appropriate permissions
+- [ ] Enabled Google Ads API in your Google Cloud Console
+- [ ] Tested the script with a small date range first
 
 ---
 

@@ -11,9 +11,10 @@
  */
 
 // Configuration - Update these values
-const SHEET_URL = 'YOUR_GOOGLE_SHEETS_URL_HERE'; // Replace with your actual sheet URL
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1Fm27WvBokQqP_qguexymNhCQnzGN4cXL_f6pnv82oPU/edit?usp=sharing'; // Replace with your actual sheet URL
 const CUSTOMER_ID = 'YOUR_GOOGLE_ADS_CUSTOMER_ID'; // Replace with your customer ID
 const DATE_RANGE_DAYS = 30; // Number of days to pull data for
+const DEVELOPER_TOKEN = 'YOUR_DEVELOPER_TOKEN'; // Replace with your developer token
 
 // Google Ads API configuration
 const GOOGLE_ADS_API_VERSION = 'v16';
@@ -23,6 +24,11 @@ const GOOGLE_ADS_API_VERSION = 'v16';
  */
 function pullGoogleAdsData() {
   try {
+    console.log('Starting Google Ads data pull...');
+    
+    // Validate configuration
+    validateConfiguration();
+    
     // Get the spreadsheet
     const spreadsheet = SpreadsheetApp.openByUrl(SHEET_URL);
     const sheet = spreadsheet.getActiveSheet();
@@ -34,6 +40,8 @@ function pullGoogleAdsData() {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - DATE_RANGE_DAYS);
+    
+    console.log(`Pulling data from ${startDate.toDateString()} to ${endDate.toDateString()}`);
     
     // Pull Google Ads data
     const adsData = getGoogleAdsData(startDate, endDate);
@@ -48,6 +56,25 @@ function pullGoogleAdsData() {
     console.error('Error in pullGoogleAdsData:', error);
     throw error;
   }
+}
+
+/**
+ * Validate configuration before running
+ */
+function validateConfiguration() {
+  if (!SHEET_URL || SHEET_URL === 'YOUR_GOOGLE_SHEETS_URL_HERE') {
+    throw new Error('Please update SHEET_URL in the configuration');
+  }
+  
+  if (!CUSTOMER_ID || CUSTOMER_ID === 'YOUR_GOOGLE_ADS_CUSTOMER_ID') {
+    throw new Error('Please update CUSTOMER_ID in the configuration');
+  }
+  
+  if (!DEVELOPER_TOKEN || DEVELOPER_TOKEN === 'YOUR_DEVELOPER_TOKEN') {
+    throw new Error('Please update DEVELOPER_TOKEN in the configuration');
+  }
+  
+  console.log('Configuration validated successfully');
 }
 
 /**
@@ -77,6 +104,7 @@ function getGoogleAdsData(startDate, endDate) {
         segments.date
       FROM campaign
       WHERE segments.date BETWEEN '${startDateStr}' AND '${endDateStr}'
+        AND campaign.status != 'REMOVED'
       ORDER BY segments.date DESC
     `;
     
@@ -107,13 +135,27 @@ function makeGoogleAdsApiRequest(query) {
       headers: {
         'Authorization': `Bearer ${ScriptApp.getOAuthToken()}`,
         'Content-Type': 'application/json',
-        'developer-token': 'YOUR_DEVELOPER_TOKEN' // Replace with your developer token
+        'developer-token': DEVELOPER_TOKEN
       },
-      payload: JSON.stringify(payload)
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
     };
     
     const response = UrlFetchApp.fetch(url, options);
-    return JSON.parse(response.getContentText());
+    const responseCode = response.getResponseCode();
+    
+    if (responseCode !== 200) {
+      throw new Error(`API request failed with status ${responseCode}: ${response.getContentText()}`);
+    }
+    
+    const responseData = JSON.parse(response.getContentText());
+    
+    if (!responseData.results) {
+      console.log('No results returned from API');
+      return { results: [] };
+    }
+    
+    return responseData;
     
   } catch (error) {
     console.error('Error making Google Ads API request:', error);
@@ -127,7 +169,7 @@ function makeGoogleAdsApiRequest(query) {
 function processApiResponse(response) {
   const processedData = [];
   
-  if (response.results) {
+  if (response.results && response.results.length > 0) {
     response.results.forEach(result => {
       const row = {
         date: result.segments?.date || '',
@@ -148,6 +190,7 @@ function processApiResponse(response) {
     });
   }
   
+  console.log(`Processed ${processedData.length} records`);
   return processedData;
 }
 
@@ -226,6 +269,7 @@ function clearExistingData(sheet) {
     const lastRow = sheet.getLastRow();
     if (lastRow > 1) { // Keep headers
       sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clear();
+      console.log('Cleared existing data from sheet');
     }
   } catch (error) {
     console.error('Error clearing existing data:', error);
