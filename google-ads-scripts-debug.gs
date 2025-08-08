@@ -43,7 +43,9 @@ function main() {
     
     // Debug campaigns
     console.log('Debugging campaigns...');
-    const campaignIterator = AdsApp.campaigns().get();
+    const campaignIterator = AdsApp.campaigns()
+      .withCondition("campaign.status != 'REMOVED'")
+      .get();
     let campaignCount = 0;
     
     while (campaignIterator.hasNext()) {
@@ -94,7 +96,9 @@ function main() {
     
     // Debug ad groups
     console.log('Debugging ad groups...');
-    const adGroupIterator = AdsApp.adGroups().get();
+    const adGroupIterator = AdsApp.adGroups()
+      .withCondition("ad_group.status != 'REMOVED'")
+      .get();
     let adGroupCount = 0;
     
     while (adGroupIterator.hasNext()) {
@@ -120,6 +124,8 @@ function main() {
         sheet.getRange(rowIndex, 1, 1, headers.length).setValues([row]);
         rowIndex++;
         
+        console.log(`Ad Group: ${adGroup.getName()} - Impressions: ${stats.getImpressions()}, Clicks: ${stats.getClicks()}, Cost: ${stats.getCost()}`);
+        
       } catch (error) {
         console.error(`Error with ad group ${adGroup.getName()}:`, error);
         const errorRow = [
@@ -140,6 +146,57 @@ function main() {
     }
     
     console.log(`Processed ${adGroupCount} ad groups`);
+    
+    // Debug keywords
+    console.log('Debugging keywords...');
+    const keywordIterator = AdsApp.keywords()
+      .withCondition("ad_group_criterion.status != 'REMOVED'")
+      .get();
+    let keywordCount = 0;
+    
+    while (keywordIterator.hasNext()) {
+      const keyword = keywordIterator.next();
+      keywordCount++;
+      
+      try {
+        const stats = keyword.getStatsFor(startDate, endDate);
+        
+        const row = [
+          'Keyword',
+          keyword.getId(),
+          keyword.getText(),
+          keyword.getStatus(),
+          stats.getImpressions() || 0,
+          stats.getClicks() || 0,
+          stats.getCost() || 0,
+          stats.getConversions() || 0,
+          stats.getCtr() || 0,
+          stats.getAverageCpc() || 0
+        ];
+        
+        sheet.getRange(rowIndex, 1, 1, headers.length).setValues([row]);
+        rowIndex++;
+        
+      } catch (error) {
+        console.error(`Error with keyword ${keyword.getText()}:`, error);
+        const errorRow = [
+          'Keyword (ERROR)',
+          keyword.getId(),
+          keyword.getText(),
+          keyword.getStatus(),
+          'ERROR',
+          'ERROR',
+          'ERROR',
+          'ERROR',
+          'ERROR',
+          'ERROR'
+        ];
+        sheet.getRange(rowIndex, 1, 1, headers.length).setValues([errorRow]);
+        rowIndex++;
+      }
+    }
+    
+    console.log(`Processed ${keywordCount} keywords`);
     
     // Auto-resize columns
     sheet.autoResizeColumns(1, headers.length);

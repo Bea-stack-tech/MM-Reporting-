@@ -53,23 +53,29 @@ function main() {
 }
 
 /**
- * Get campaign-level data
+ * Get campaign-level data using correct Google Ads Scripts API
  */
 function getCampaignData(startDate, endDate) {
   try {
+    console.log('Getting campaign data...');
+    
+    // Use the correct Google Ads Scripts API
     const campaignIterator = AdsApp.campaigns()
       .withCondition("campaign.status != 'REMOVED'")
       .get();
     
     const campaignData = [];
+    let campaignCount = 0;
     
     while (campaignIterator.hasNext()) {
       const campaign = campaignIterator.next();
+      campaignCount++;
       
       try {
+        // Get stats for the date range
         const stats = campaign.getStatsFor(startDate, endDate);
         
-        // Get campaign details
+        // Get campaign details using correct method names
         const row = {
           date: formatDate(new Date()),
           campaignId: campaign.getId(),
@@ -87,16 +93,36 @@ function getCampaignData(startDate, endDate) {
           conversionRate: stats.getConversionRate() || 0
         };
         
-        // Only include campaigns with some activity
-        if (row.impressions > 0 || row.clicks > 0 || row.cost > 0) {
-          campaignData.push(row);
-        }
+        // Include all campaigns, not just those with activity
+        campaignData.push(row);
+        
+        console.log(`Campaign: ${campaign.getName()} - Impressions: ${row.impressions}, Clicks: ${row.clicks}, Cost: ${row.cost}`);
+        
       } catch (campaignError) {
         console.error(`Error processing campaign ${campaign.getName()}:`, campaignError);
+        
+        // Add error row for debugging
+        const errorRow = {
+          date: formatDate(new Date()),
+          campaignId: campaign.getId(),
+          campaignName: campaign.getName(),
+          status: campaign.getStatus(),
+          channelType: campaign.getAdvertisingChannelType(),
+          impressions: 0,
+          clicks: 0,
+          cost: 0,
+          conversions: 0,
+          conversionValue: 0,
+          averageCpc: 0,
+          ctr: 0,
+          averageCpm: 0,
+          conversionRate: 0
+        };
+        campaignData.push(errorRow);
       }
     }
     
-    console.log(`Processed ${campaignData.length} campaign records`);
+    console.log(`Processed ${campaignCount} campaigns, found ${campaignData.length} records`);
     return campaignData;
     
   } catch (error) {
@@ -106,18 +132,23 @@ function getCampaignData(startDate, endDate) {
 }
 
 /**
- * Get ad group-level data
+ * Get ad group-level data using correct Google Ads Scripts API
  */
 function getAdGroupData(startDate, endDate) {
   try {
+    console.log('Getting ad group data...');
+    
+    // Use the correct Google Ads Scripts API
     const adGroupIterator = AdsApp.adGroups()
       .withCondition("ad_group.status != 'REMOVED'")
       .get();
     
     const adGroupData = [];
+    let adGroupCount = 0;
     
     while (adGroupIterator.hasNext()) {
       const adGroup = adGroupIterator.next();
+      adGroupCount++;
       
       try {
         const campaign = adGroup.getCampaign();
@@ -140,16 +171,34 @@ function getAdGroupData(startDate, endDate) {
           conversionRate: stats.getConversionRate() || 0
         };
         
-        // Only include ad groups with some activity
-        if (row.impressions > 0 || row.clicks > 0 || row.cost > 0) {
-          adGroupData.push(row);
-        }
+        // Include all ad groups, not just those with activity
+        adGroupData.push(row);
+        
       } catch (adGroupError) {
         console.error(`Error processing ad group ${adGroup.getName()}:`, adGroupError);
+        
+        // Add error row for debugging
+        const errorRow = {
+          date: formatDate(new Date()),
+          campaignId: adGroup.getCampaign().getId(),
+          campaignName: adGroup.getCampaign().getName(),
+          adGroupId: adGroup.getId(),
+          adGroupName: adGroup.getName(),
+          status: adGroup.getStatus(),
+          impressions: 0,
+          clicks: 0,
+          cost: 0,
+          conversions: 0,
+          averageCpc: 0,
+          ctr: 0,
+          averageCpm: 0,
+          conversionRate: 0
+        };
+        adGroupData.push(errorRow);
       }
     }
     
-    console.log(`Processed ${adGroupData.length} ad group records`);
+    console.log(`Processed ${adGroupCount} ad groups, found ${adGroupData.length} records`);
     return adGroupData;
     
   } catch (error) {
@@ -159,18 +208,23 @@ function getAdGroupData(startDate, endDate) {
 }
 
 /**
- * Get keyword-level data
+ * Get keyword-level data using correct Google Ads Scripts API
  */
 function getKeywordData(startDate, endDate) {
   try {
+    console.log('Getting keyword data...');
+    
+    // Use the correct Google Ads Scripts API
     const keywordIterator = AdsApp.keywords()
       .withCondition("ad_group_criterion.status != 'REMOVED'")
       .get();
     
     const keywordData = [];
+    let keywordCount = 0;
     
     while (keywordIterator.hasNext()) {
       const keyword = keywordIterator.next();
+      keywordCount++;
       
       try {
         const adGroup = keyword.getAdGroup();
@@ -195,16 +249,35 @@ function getKeywordData(startDate, endDate) {
           conversionRate: stats.getConversionRate() || 0
         };
         
-        // Only include keywords with some activity
-        if (row.impressions > 0 || row.clicks > 0 || row.cost > 0) {
-          keywordData.push(row);
-        }
+        // Include all keywords, not just those with activity
+        keywordData.push(row);
+        
       } catch (keywordError) {
         console.error(`Error processing keyword ${keyword.getText()}:`, keywordError);
+        
+        // Add error row for debugging
+        const errorRow = {
+          date: formatDate(new Date()),
+          campaignId: keyword.getAdGroup().getCampaign().getId(),
+          campaignName: keyword.getAdGroup().getCampaign().getName(),
+          adGroupId: keyword.getAdGroup().getId(),
+          adGroupName: keyword.getAdGroup().getName(),
+          keyword: keyword.getText(),
+          status: keyword.getStatus(),
+          impressions: 0,
+          clicks: 0,
+          cost: 0,
+          conversions: 0,
+          averageCpc: 0,
+          ctr: 0,
+          averageCpm: 0,
+          conversionRate: 0
+        };
+        keywordData.push(errorRow);
       }
     }
     
-    console.log(`Processed ${keywordData.length} keyword records`);
+    console.log(`Processed ${keywordCount} keywords, found ${keywordData.length} records`);
     return keywordData;
     
   } catch (error) {
